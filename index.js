@@ -1,10 +1,10 @@
 require("dotenv").config();
 
 const express = require("express");
+
 const {
   Client,
   GatewayIntentBits,
-  PermissionsBitField,
   EmbedBuilder,
 } = require("discord.js");
 
@@ -21,7 +21,7 @@ app.get("/", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Web server running on port ${PORT}`);
+  console.log(`✅ Web server running on port ${PORT}`);
 });
 
 // =========================
@@ -36,9 +36,12 @@ const client = new Client({
   ],
 });
 
-// Bot Ready
-client.once("ready", () => {
-  console.log(`Logged in as ${client.user.tag}`);
+// =========================
+// BOT READY
+// =========================
+
+client.once("clientReady", () => {
+  console.log(`✅ Logged in as ${client.user.tag}`);
 });
 
 // =========================
@@ -47,26 +50,40 @@ client.once("ready", () => {
 
 client.on("messageCreate", async (message) => {
   try {
+    // กันบอท
     if (message.author.bot) return;
 
-    // เช็คว่าช่องมีคำว่า ticket
+    // กัน DM
+    if (!message.guild) return;
+
+    // เช็คว่าห้องมีชื่อ ticket
+    if (!message.channel.name) return;
+
     if (!message.channel.name.includes("ticket")) return;
 
+    // ดึงข้อความล่าสุด
     const messages = await message.channel.messages.fetch({
       limit: 20,
     });
 
-    // หา user ล่าสุดที่ไม่ใช่บอท
+    // หา "ลูกค้า" ล่าสุด
     const customerMessage = messages.find(
       (m) => !m.author.bot
     );
 
     if (!customerMessage) {
-      console.log("ไม่พบลูกค้าใน Ticket");
+      console.log("❌ ไม่พบลูกค้าใน Ticket");
       return;
     }
 
     const userId = customerMessage.author.id;
+
+    // ถ้าคนพิมพ์ล่าสุดคือเจ้าของ ticket
+    // ไม่ต้องส่ง DM
+    if (message.author.id === userId) {
+      console.log("⏳ ลูกค้ากำลังคุยอยู่");
+      return;
+    }
 
     const now = Date.now();
 
@@ -75,35 +92,40 @@ client.on("messageCreate", async (message) => {
 
     const diff = now - lastCustomerMessageTime;
 
-    // ถ้าลูกค้าพิมพ์ล่าสุดภายใน 30 วิ ไม่ต้อง DM
+    // ถ้าลูกค้าพิมพ์ภายใน 30 วิ
+    // ไม่ส่ง DM
     if (diff < 30000) {
-      console.log("ลูกค้ากำลังอ่าน Ticket อยู่");
+      console.log("⏳ ลูกค้ากำลังอ่าน Ticket อยู่");
       return;
     }
 
+    // Fetch User
     const user = await client.users.fetch(userId);
 
+    // Embed
     const embed = new EmbedBuilder()
       .setColor("#00C2FF")
       .setTitle("XB00TS แจ้งเตือน")
       .setDescription(`
-🔹 แจ้งเตือนจากทีม XBOOTS
+🔹・แจ้งเตือนจากร้าน XBOOTS
 
-✅ แอดมินตอบ Ticket ของคุณแล้ว
+✅・แอดมินตอบ Ticket ของคุณแล้ว
 
-📩 กรุณากลับไปตรวจสอบ Ticket
+📩・TK ของคุณ
       `)
       .setFooter({
         text: "XB00TS Support",
-      });
+      })
+      .setTimestamp();
 
+    // ส่ง DM
     await user.send({
       embeds: [embed],
     });
 
-    console.log(`ส่ง DM หา ${user.tag} แล้ว`);
+    console.log(`✅ ส่ง DM หา ${user.tag} แล้ว`);
   } catch (err) {
-    console.error("ERROR:", err);
+    console.error("❌ ERROR:", err);
   }
 });
 
