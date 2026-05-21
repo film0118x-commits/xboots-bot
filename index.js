@@ -36,6 +36,9 @@ const client = new Client({
   ],
 });
 
+// กันส่ง DM ซ้ำ
+const cooldown = new Map();
+
 // =========================
 // READY
 // =========================
@@ -57,62 +60,42 @@ client.on("messageCreate", async (message) => {
     if (!message.channel.name.includes("ticket")) return;
 
     // อนุญาตเฉพาะแอดมิน
-    if (
-      !message.member?.permissions?.has("Administrator")
-    ) {
+    if (!message.member.permissions.has("Administrator")) {
       return;
     }
 
-    // =========================
     // ดึงข้อความล่าสุด
-    // =========================
-
     const messages = await message.channel.messages.fetch({
       limit: 20,
     });
 
-    // หา message ล่าสุดของลูกค้า
-    const customerMessage = messages.find(
-      (m) =>
-        !m.author.bot &&
-        !m.member?.permissions?.has("Administrator")
-    );
+    // หา user ลูกค้า
+    const customerMessage = messages
+      .filter(
+        (m) =>
+          !m.author.bot &&
+          m.author.id !== message.author.id
+      )
+      .first();
 
     if (!customerMessage) {
-      console.log("❌ ไม่พบลูกค้า");
+      console.log(":x: ไม่พบลูกค้า");
       return;
     }
 
     const userId = customerMessage.author.id;
 
-    // =========================
-    // เช็คเวลาที่ลูกค้าพิมพ์ล่าสุด
-    // =========================
+    // กันส่ง DM ซ้ำภายใน 1 นาที
+    const lastSent = cooldown.get(userId);
 
-    const now = Date.now();
-
-    const lastCustomerMessageTime =
-      customerMessage.createdTimestamp;
-
-    const diff =
-      now - lastCustomerMessageTime;
-
-    // 5 นาที = 300000 ms
-    if (diff < 5 * 60 * 1000) {
-      console.log(
-        "🛑 ลูกค้ายังคุยอยู่ ไม่ส่งแจ้งเตือน"
-      );
+    if (lastSent && Date.now() - lastSent < 60000) {
+      console.log(":hourglass_flowing_sand: กัน DM ซ้ำ");
       return;
     }
 
-    console.log(
-      "✅ ลูกค้าเงียบเกิน 5 นาที ส่ง DM ได้"
-    );
+    cooldown.set(userId, Date.now());
 
-    // =========================
     // ดึง user
-    // =========================
-
     const user = await client.users.fetch(userId);
 
     // แท็กห้อง ticket
@@ -125,10 +108,6 @@ client.on("messageCreate", async (message) => {
     const embed = new EmbedBuilder()
       .setColor("#8A2BE2")
 
-      .setAuthor({
-        name: "XBOOTS SUPPORT",
-      })
-
       .setDescription(`
 🔹 • แจ้งเตือนจากร้าน XBOOTS
 
@@ -137,9 +116,17 @@ client.on("messageCreate", async (message) => {
 🎟️ • TK ของคุณ: ${ticketTag}
       `)
 
+      // :white_check_mark: ใช้ RAW URL เท่านั้น
       .setImage(
         "https://raw.githubusercontent.com/film0118x-commits/xboots-bot/main/X1.png"
-      );
+      )
+
+      .setFooter({
+        text: `วันนี้ เวลา ${new Date().toLocaleTimeString("th-TH", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })}`,
+      });
 
     // ส่ง DM
     await user.send({
@@ -147,9 +134,8 @@ client.on("messageCreate", async (message) => {
     });
 
     console.log(`✅ ส่ง DM หา ${user.tag} แล้ว`);
-
   } catch (err) {
-    console.error("❌ ERROR:", err);
+    console.error(":x: ERROR:", err);
   }
 });
 
