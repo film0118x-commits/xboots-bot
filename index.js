@@ -6,7 +6,6 @@ const {
   Client,
   GatewayIntentBits,
   EmbedBuilder,
-  PermissionsBitField,
 } = require("discord.js");
 
 // =========================
@@ -60,12 +59,8 @@ client.on("messageCreate", async (message) => {
     // ต้องเป็นห้อง ticket
     if (!message.channel.name.includes("ticket")) return;
 
-    // ให้เฉพาะแอดมินตอบแล้วค่อยส่ง DM
-    if (
-      !message.member.permissions.has(
-        PermissionsBitField.Flags.Administrator
-      )
-    ) {
+    // อนุญาตเฉพาะแอดมิน
+    if (!message.member.permissions.has("Administrator")) {
       return;
     }
 
@@ -74,7 +69,7 @@ client.on("messageCreate", async (message) => {
       limit: 20,
     });
 
-    // หาลูกค้า
+    // หา user ลูกค้า
     const customerMessage = messages
       .filter(
         (m) =>
@@ -90,7 +85,7 @@ client.on("messageCreate", async (message) => {
 
     const userId = customerMessage.author.id;
 
-    // กัน DM ซ้ำใน 60 วิ
+    // กันส่ง DM ซ้ำภายใน 1 นาที
     const lastSent = cooldown.get(userId);
 
     if (lastSent && Date.now() - lastSent < 60000) {
@@ -103,7 +98,7 @@ client.on("messageCreate", async (message) => {
     // ดึง user
     const user = await client.users.fetch(userId);
 
-    // แท็กห้อง ticket แบบกดได้
+    // แท็กห้อง ticket
     const ticketTag = `<#${message.channel.id}>`;
 
     // =========================
@@ -111,7 +106,7 @@ client.on("messageCreate", async (message) => {
     // =========================
 
     const embed = new EmbedBuilder()
-      .setColor("#00C2FF")
+      .setColor("#8A2BE2")
 
       .setDescription(`
 🔹 • แจ้งเตือนจากร้าน XBOOTS
@@ -121,9 +116,9 @@ client.on("messageCreate", async (message) => {
 🎟️ • TK ของคุณ: ${ticketTag}
       `)
 
-      // รูปจาก GitHub RAW
+      // ✅ ใช้ RAW URL เท่านั้น
       .setImage(
-        "https://raw.githubusercontent.com/film0118x-commits/xboots-bot/main/X1(3).png"
+        "https://raw.githubusercontent.com/film0118x-commits/xboots-bot/main/X1.png"
       )
 
       .setFooter({
