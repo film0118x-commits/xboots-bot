@@ -37,7 +37,10 @@ const client = new Client({
   ],
 });
 
-// กันส่ง DM ซ้ำ
+// =========================
+// COOLDOWN
+// =========================
+
 const cooldown = new Map();
 
 // =========================
@@ -71,12 +74,18 @@ client.on("messageCreate", async (message) => {
 
     console.log("📩 ตรวจพบข้อความจากแอดมิน");
 
+    // =========================
     // ดึงข้อความล่าสุด
+    // =========================
+
     const messages = await message.channel.messages.fetch({
       limit: 20,
     });
 
+    // =========================
     // หา user ลูกค้า
+    // =========================
+
     const customerMessage = messages
       .filter(
         (m) =>
@@ -106,7 +115,7 @@ client.on("messageCreate", async (message) => {
     // บันทึกเวลา
     cooldown.set(userId, Date.now());
 
-    console.log("⏳ เริ่มดีเลย์ 5 นาที");
+    console.log("⏳ รอ 5 นาที ก่อนส่ง DM");
 
     // =========================
     // ดีเลย์ 5 นาที
@@ -114,10 +123,16 @@ client.on("messageCreate", async (message) => {
 
     setTimeout(async () => {
       try {
+        // =========================
         // ดึง user
+        // =========================
+
         const user = await client.users.fetch(userId);
 
+        // =========================
         // แท็กห้อง ticket
+        // =========================
+
         const ticketTag = `<#${message.channel.id}>`;
 
         // =========================
@@ -135,15 +150,20 @@ client.on("messageCreate", async (message) => {
 🎟️ • TK ของคุณ: ${ticketTag}
           `)
 
+          // =========================
+          // รูปภาพ
+          // =========================
+
           .setImage(
             "https://raw.githubusercontent.com/film0118x-commits/xboots-bot/main/X1.png"
           )
 
+          // =========================
+          // FOOTER
+          // =========================
+
           .setFooter({
-            text: `วันนี้ เวลา ${new Date().toLocaleTimeString("th-TH", {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}`,
+            text: "XBOOTS SUPPORT",
           });
 
         // =========================
