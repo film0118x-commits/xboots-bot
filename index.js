@@ -123,7 +123,7 @@ client.on("messageCreate", async (message) => {
 
       // รูปจาก GitHub RAW
       .setImage(
-        "https://raw.githubusercontent.com/film0118x-commits/xboots-bot/main/ChatGPT%20Image%20May%2021%2C%202026%2C%2004_55_34%20AM.png"
+        "https://raw.githubusercontent.com/film0118x-commits/xboots-bot/main/X1(3).png"
       )
 
       .setFooter({
