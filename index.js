@@ -109,11 +109,11 @@ client.on("messageCreate", async (message) => {
       .setColor("#8A2BE2")
 
       .setDescription(`
-🔹 • แจ้งเตือนจากร้าน XBOOTS
+🔹  •  แจ้งเตือนจากร้าน XBOOTS
 
-✅ • แอดมินตอบ Ticket ของคุณแล้ว
+✅  •  แอดมินตอบ Ticket ของคุณแล้ว
 
-🎟️ • TK ของคุณ: ${ticketTag}
+🎟️  •  TK ของคุณ: ${ticketTag}
       `)
 
       // :white_check_mark: ใช้ RAW URL เท่านั้น
