@@ -96,27 +96,33 @@ client.on("messageCreate", async (message) => {
     // fetch user
     const user = await client.users.fetch(userId);
 
-    // ลิงก์ Ticket
-    const guildId = message.guild.id;
-
-    const ticketLink =
-      `https://discord.com/channels/${guildId}/${message.channel.id}`;
-
+    // =========================
     // EMBED
+    // =========================
+
     const embed = new EmbedBuilder()
       .setColor("#00C2FF")
-      .setTitle("XB00TS แจ้งเตือน")
+
       .setDescription(`
-🔹 แจ้งเตือนจากทีม XBOOTS
+🔹・แจ้งเตือนจากร้าน XBOOTS
 
-✅ แอดมินตอบ Ticket ของคุณแล้ว
+✅・แอดมินตอบ Ticket ของคุณแล้ว
 
-📩 กรุณากลับไปตรวจสอบ Ticket
-
-🎫 [กดเปิด Ticket](${ticketLink})
+🎟️・TK ของคุณ: ${message.channel.name}
       `)
+
+      .setImage(
+        "https://img1.pic.in.th/images/ChatGPT-Image-May-21-2026-04_55_34-AMc33e0f6628a2bae5.png"
+      )
+
       .setFooter({
-        text: "XB00TS Support",
+        text: `วันนี้ เวลา ${new Date().toLocaleTimeString(
+          "th-TH",
+          {
+            hour: "2-digit",
+            minute: "2-digit",
+          }
+        )}`,
       });
 
     // ส่ง DM
