@@ -53,7 +53,7 @@ client.on("messageCreate", async (message) => {
     // กัน bot
     if (message.author.bot) return;
 
-    // ห้องต้องมีคำว่า ticket
+    // ต้องเป็นห้อง ticket
     if (!message.channel.name.includes("ticket")) return;
 
     // ดึงข้อความล่าสุด
@@ -62,8 +62,8 @@ client.on("messageCreate", async (message) => {
     });
 
     // หา "ลูกค้า"
-    // ที่ไม่ใช่ bot
-    // และไม่ใช่คนที่พิมพ์ล่าสุด
+    // คนที่ไม่ใช่ bot
+    // และไม่ใช่คนพิมพ์ล่าสุด
     const customerMessage = messages
       .filter(
         (m) =>
@@ -86,43 +86,40 @@ client.on("messageCreate", async (message) => {
 
     const diff = now - lastCustomerMessageTime;
 
-    // ถ้าลูกค้าเพิ่งพิมพ์ภายใน 30 วิ
-    // จะไม่ส่ง DM
+    // ถ้าลูกค้าเพิ่งพิมพ์ใน 30 วิ
+    // จะไม่ DM
     if (diff < 30000) {
       console.log("⏳ ลูกค้ากำลังอ่าน Ticket อยู่");
       return;
     }
 
-    // fetch user
+    // ดึง user
     const user = await client.users.fetch(userId);
 
-    // =========================
-    // EMBED
-    // =========================
+    // แท็กห้อง ticket แบบกดได้
+    const ticketTag = `<#${message.channel.id}>`;
 
+    // EMBED
     const embed = new EmbedBuilder()
       .setColor("#00C2FF")
 
       .setDescription(`
-🔹・แจ้งเตือนจากร้าน XBOOTS
+🔹 • แจ้งเตือนจากร้าน XBOOTS
 
-✅・แอดมินตอบ Ticket ของคุณแล้ว
+✅ • แอดมินตอบ Ticket ของคุณแล้ว
 
-🎟️・TK ของคุณ: ${message.channel.name}
+🎟️ • TK ของคุณ: ${ticketTag}
       `)
 
       .setImage(
-        "https://img1.pic.in.th/images/ChatGPT-Image-May-21-2026-04_55_34-AMc33e0f6628a2bae5.png"
+        "https://img1.pic.in.th/images/2025/05/21/ChatGPT-Image-May-21-2026-04_55_34-AMc33e0f6628a2bae5.png"
       )
 
       .setFooter({
-        text: `วันนี้ เวลา ${new Date().toLocaleTimeString(
-          "th-TH",
-          {
-            hour: "2-digit",
-            minute: "2-digit",
-          }
-        )}`,
+        text: `วันนี้ เวลา ${new Date().toLocaleTimeString("th-TH", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })}`,
       });
 
     // ส่ง DM
