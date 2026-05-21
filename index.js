@@ -5,7 +5,7 @@ const express = require("express");
 const {
   Client,
   GatewayIntentBits,
-  EmbedBuilder,
+ EmbedBuilder,
 } = require("discord.js");
 
 // =========================
@@ -53,7 +53,7 @@ client.on("messageCreate", async (message) => {
     // กัน bot
     if (message.author.bot) return;
 
-    // ต้องเป็นห้อง ticket
+    // เช็คว่าห้องมีคำว่า ticket
     if (!message.channel.name.includes("ticket")) return;
 
     // ดึงข้อความล่าสุด
@@ -62,8 +62,6 @@ client.on("messageCreate", async (message) => {
     });
 
     // หา "ลูกค้า"
-    // คนที่ไม่ใช่ bot
-    // และไม่ใช่คนพิมพ์ล่าสุด
     const customerMessage = messages
       .filter(
         (m) =>
@@ -86,8 +84,8 @@ client.on("messageCreate", async (message) => {
 
     const diff = now - lastCustomerMessageTime;
 
-    // ถ้าลูกค้าเพิ่งพิมพ์ใน 30 วิ
-    // จะไม่ DM
+    // ถ้าลูกค้าเพิ่งพิมพ์ภายใน 30 วิ
+    // จะไม่ส่ง DM
     if (diff < 30000) {
       console.log("⏳ ลูกค้ากำลังอ่าน Ticket อยู่");
       return;
@@ -96,7 +94,7 @@ client.on("messageCreate", async (message) => {
     // ดึง user
     const user = await client.users.fetch(userId);
 
-    // แท็กห้อง ticket แบบกดได้
+    // แท็กห้อง Ticket แบบกดได้
     const ticketTag = `<#${message.channel.id}>`;
 
     // EMBED
