@@ -6,6 +6,7 @@ const {
   Client,
   GatewayIntentBits,
   EmbedBuilder,
+  PermissionsBitField,
 } = require("discord.js");
 
 // =========================
@@ -59,8 +60,12 @@ client.on("messageCreate", async (message) => {
     // ต้องเป็นห้อง ticket
     if (!message.channel.name.includes("ticket")) return;
 
-    // กันลูกค้าพิมพ์เองแล้วบอท DM
-    if (!message.member.permissions.has("Administrator")) {
+    // ให้เฉพาะแอดมินตอบแล้วค่อยส่ง DM
+    if (
+      !message.member.permissions.has(
+        PermissionsBitField.Flags.Administrator
+      )
+    ) {
       return;
     }
 
@@ -85,7 +90,7 @@ client.on("messageCreate", async (message) => {
 
     const userId = customerMessage.author.id;
 
-    // กันส่ง DM รัว
+    // กัน DM ซ้ำใน 60 วิ
     const lastSent = cooldown.get(userId);
 
     if (lastSent && Date.now() - lastSent < 60000) {
@@ -98,7 +103,7 @@ client.on("messageCreate", async (message) => {
     // ดึง user
     const user = await client.users.fetch(userId);
 
-    // แท็กห้องแบบกดได้
+    // แท็กห้อง ticket แบบกดได้
     const ticketTag = `<#${message.channel.id}>`;
 
     // =========================
@@ -116,8 +121,9 @@ client.on("messageCreate", async (message) => {
 🎟️ • TK ของคุณ: ${ticketTag}
       `)
 
+      // รูปจาก GitHub RAW
       .setImage(
-        "https://i.postimg.cc/pV0Pj6Z4/Chat-GPT-Image-May-21-2026-04-55-34-AM.png"
+        "https://raw.githubusercontent.com/film0118x-commits/xboots-bot/main/ChatGPT%20Image%20May%2021%2C%202026%2C%2004_55_34%20AM.png"
       )
 
       .setFooter({
