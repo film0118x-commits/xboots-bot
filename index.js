@@ -37,10 +37,10 @@ const client = new Client({
 });
 
 // =========================
-// BOT READY
+// READY
 // =========================
 
-client.once("clientReady", () => {
+client.once("ready", () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
 });
 
@@ -50,15 +50,10 @@ client.once("clientReady", () => {
 
 client.on("messageCreate", async (message) => {
   try {
-    // กันบอท
+    // กัน bot
     if (message.author.bot) return;
 
-    // กัน DM
-    if (!message.guild) return;
-
-    // เช็คว่าห้องมีชื่อ ticket
-    if (!message.channel.name) return;
-
+    // ห้องต้องมีคำว่า ticket
     if (!message.channel.name.includes("ticket")) return;
 
     // ดึงข้อความล่าสุด
@@ -66,24 +61,23 @@ client.on("messageCreate", async (message) => {
       limit: 20,
     });
 
-    // หา "ลูกค้า" ล่าสุด
-    const customerMessage = messages.find(
-      (m) => !m.author.bot
-    );
+    // หา "ลูกค้า"
+    // ที่ไม่ใช่ bot
+    // และไม่ใช่คนที่พิมพ์ล่าสุด
+    const customerMessage = messages
+      .filter(
+        (m) =>
+          !m.author.bot &&
+          m.author.id !== message.author.id
+      )
+      .first();
 
     if (!customerMessage) {
-      console.log("❌ ไม่พบลูกค้าใน Ticket");
+      console.log("❌ ไม่พบลูกค้า");
       return;
     }
 
     const userId = customerMessage.author.id;
-
-    // ถ้าคนพิมพ์ล่าสุดคือเจ้าของ ticket
-    // ไม่ต้องส่ง DM
-    if (message.author.id === userId) {
-      console.log("⏳ ลูกค้ากำลังคุยอยู่");
-      return;
-    }
 
     const now = Date.now();
 
@@ -92,31 +86,38 @@ client.on("messageCreate", async (message) => {
 
     const diff = now - lastCustomerMessageTime;
 
-    // ถ้าลูกค้าพิมพ์ภายใน 30 วิ
-    // ไม่ส่ง DM
+    // ถ้าลูกค้าเพิ่งพิมพ์ภายใน 30 วิ
+    // จะไม่ส่ง DM
     if (diff < 30000) {
       console.log("⏳ ลูกค้ากำลังอ่าน Ticket อยู่");
       return;
     }
 
-    // Fetch User
+    // fetch user
     const user = await client.users.fetch(userId);
 
-    // Embed
+    // ลิงก์ Ticket
+    const guildId = message.guild.id;
+
+    const ticketLink =
+      `https://discord.com/channels/${guildId}/${message.channel.id}`;
+
+    // EMBED
     const embed = new EmbedBuilder()
       .setColor("#00C2FF")
       .setTitle("XB00TS แจ้งเตือน")
       .setDescription(`
-🔹・แจ้งเตือนจากร้าน XBOOTS
+🔹 แจ้งเตือนจากทีม XBOOTS
 
-✅・แอดมินตอบ Ticket ของคุณแล้ว
+✅ แอดมินตอบ Ticket ของคุณแล้ว
 
-📩・TK ของคุณ
+📩 กรุณากลับไปตรวจสอบ Ticket
+
+🎫 [กดเปิด Ticket](${ticketLink})
       `)
       .setFooter({
         text: "XB00TS Support",
-      })
-      .setTimestamp();
+      });
 
     // ส่ง DM
     await user.send({
