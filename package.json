@@ -1,17 +1,18 @@
 {
-  "name": "discord-bot",
+  "name": "xboots-bot",
   "version": "1.0.0",
-  "description": "",
+  "description": "Discord Ticket Notification Bot",
   "main": "index.js",
+  "type": "commonjs",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
     "discord.js": "^14.26.4",
-    "dotenv": "^17.4.2"
+    "dotenv": "^17.4.2",
+    "express": "^4.19.2"
   }
 }
