@@ -1,105 +1,98 @@
+const express = require("express");
 const {
   Client,
   GatewayIntentBits,
+  PermissionsBitField,
   EmbedBuilder,
-  PermissionsBitField
 } = require("discord.js");
 
-require("dotenv").config();
+const app = express();
+const PORT = process.env.PORT || 3000;
 
+// Web server สำหรับ Render
+app.get("/", (req, res) => {
+  res.send("Bot is running!");
+});
+
+app.listen(PORT, () => {
+  console.log(`Web server running on port ${PORT}`);
+});
+
+// Discord Client
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
-    GatewayIntentBits.DirectMessages
-  ]
+  ],
 });
 
+// Bot Ready
 client.once("ready", () => {
-  console.log(`${client.user.tag} ออนไลน์แล้ว`);
+  console.log(`Logged in as ${client.user.tag}`);
 });
 
+// เมื่อมีข้อความใหม่
 client.on("messageCreate", async (message) => {
-
-  // กันบอท
   if (message.author.bot) return;
 
-  // ตรวจว่าชื่อห้องมีคำว่า ticket
+  // ตรวจว่าห้องชื่อ ticket ไหม
   if (!message.channel.name.includes("ticket")) return;
 
-  // ตรวจว่าเป็นแอดมินไหม
-  if (
-    !message.member.permissions.has(
-      PermissionsBitField.Flags.Administrator
-    )
-  ) return;
-
-  // ดึง user id จาก topic ห้อง
-  const messages = await message.channel.messages.fetch({ limit: 20 });
-
-const customerMessage = messages.find(
-m =>
-!m.author.bot &&
-(
-!m.member ||
-!m.member.permissions.has(
-PermissionsBitField.Flags.Administrator
-)
-)
-);
-
-if (!customerMessage) {
-  console.log("ไม่พบลูกค้าใน Ticket");
-  return;
-}
-
-const userId = customerMessage.author.id;
-
-const now = Date.now();
-
-const lastCustomerMessageTime =
-  customerMessage.createdTimestamp;
-
-const diff = now - lastCustomerMessageTime;
-
-// ถ้าลูกค้าพิมพ์ล่าสุดไม่เกิน 30 วินาที
-// จะไม่ส่ง DM
-if (diff < 30000) {
-  console.log("ลูกค้ากำลังอ่าน Ticket อยู่");
-  return;
-}
-
   try {
+    const messages = await message.channel.messages.fetch({ limit: 20 });
+
+    const customerMessage = messages.find(
+      (m) =>
+        !m.author.bot &&
+        (m.member ||
+          m.memberPermissions?.has(
+            PermissionsBitField.Flags.Administrator
+          ))
+    );
+
+    if (!customerMessage) {
+      console.log("ไม่พบลูกค้าใน Ticket");
+      return;
+    }
+
+    const userId = customerMessage.author.id;
+
+    const now = Date.now();
+
+    const lastCustomerMessageTime =
+      customerMessage.createdTimestamp;
+
+    const diff = now - lastCustomerMessageTime;
+
+    // ถ้าลูกค้าพิมพ์ล่าสุดไม่เกิน 30 วิ
+    // จะไม่ส่ง DM
+    if (diff < 30000) {
+      console.log("ลูกค้ากำลังอ่าน Ticket อยู่");
+      return;
+    }
 
     const user = await client.users.fetch(userId);
 
     const embed = new EmbedBuilder()
-.setColor("00C2FF")
+      .setColor("#00C2FF")
+      .setTitle("XB00TS แจ้งเตือน")
+      .setDescription(`
+🔹 แจ้งเตือนจากทีม XBOOTS
 
-.setDescription(`
-💠 ・ แจ้งเตือนจากร้าน XBOOTS
+✅ แอดมินตอบ Ticket ของคุณแล้ว
 
-✅ ・ แอดมินตอบ Ticket ของคุณแล้ว
+📩 กรุณากลับไปตรวจสอบ Ticket
+      `)
+      .setFooter({ text: "XB00TS Support" });
 
-🎫 ・ TK ของคุณ: ${message.channel}
-`)
+    await user.send({ embeds: [embed] });
 
-.setImage("https://img1.pic.in.th/images/ChatGPT-Image-May-21-2026-04_55_34-AM.png")
-
-.setTimestamp();
-
-    await user.send({
-      embeds: [embed]
-    });
-
-    console.log("ส่ง DM สำเร็จ");
-
+    console.log(`ส่ง DM หา ${user.tag} แล้ว`);
   } catch (err) {
-    console.log("ส่ง DM ไม่สำเร็จ");
-    console.log(err);
+    console.error(err);
   }
-
 });
 
+// LOGIN
 client.login(process.env.TOKEN);
