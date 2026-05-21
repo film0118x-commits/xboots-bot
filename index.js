@@ -6,6 +6,7 @@ const {
   Client,
   GatewayIntentBits,
   EmbedBuilder,
+  PermissionsBitField,
 } = require("discord.js");
 
 // =========================
@@ -36,7 +37,16 @@ const client = new Client({
   ],
 });
 
+// =========================
+// เก็บเวลาล่าสุดที่ลูกค้าพิมพ์
+// =========================
+
+const customerLastMessage = new Map();
+
+// =========================
 // กันส่ง DM ซ้ำ
+// =========================
+
 const cooldown = new Map();
 
 // =========================
@@ -59,17 +69,43 @@ client.on("messageCreate", async (message) => {
     // ต้องเป็นห้อง ticket
     if (!message.channel.name.includes("ticket")) return;
 
-    // อนุญาตเฉพาะแอดมิน
-    if (!message.member.permissions.has("Administrator")) {
+    // =========================
+    // เช็คว่าเป็นแอดมินไหม
+    // =========================
+
+    const isAdmin = message.member.permissions.has(
+      PermissionsBitField.Flags.Administrator
+    );
+
+    // =========================
+    // ถ้าเป็นลูกค้า -> อัปเดตเวลา
+    // =========================
+
+    if (!isAdmin) {
+      customerLastMessage.set(
+        message.author.id,
+        Date.now()
+      );
+
+      console.log(
+        `💬 ลูกค้าพิมพ์ล่าสุด: ${message.author.tag}`
+      );
+
       return;
     }
 
+    // =========================
     // ดึงข้อความล่าสุด
+    // =========================
+
     const messages = await message.channel.messages.fetch({
       limit: 20,
     });
 
+    // =========================
     // หา user ลูกค้า
+    // =========================
+
     const customerMessage = messages
       .filter(
         (m) =>
@@ -79,26 +115,56 @@ client.on("messageCreate", async (message) => {
       .first();
 
     if (!customerMessage) {
-      console.log(":x: ไม่พบลูกค้า");
+      console.log("❌ ไม่พบลูกค้า");
       return;
     }
 
     const userId = customerMessage.author.id;
 
+    // =========================
+    // เช็คว่าลูกค้าพิมพ์ภายใน 3 นาทีไหม
+    // =========================
+
+    const lastCustomerMessage =
+      customerLastMessage.get(userId);
+
+    if (
+      lastCustomerMessage &&
+      Date.now() - lastCustomerMessage <
+        3 * 60 * 1000
+    ) {
+      console.log(
+        "🛑 ลูกค้ายังอยู่หน้า TK ไม่ส่งแจ้งเตือน"
+      );
+      return;
+    }
+
+    // =========================
     // กันส่ง DM ซ้ำภายใน 1 นาที
+    // =========================
+
     const lastSent = cooldown.get(userId);
 
-    if (lastSent && Date.now() - lastSent < 60000) {
-      console.log(":hourglass_flowing_sand: กัน DM ซ้ำ");
+    if (
+      lastSent &&
+      Date.now() - lastSent < 60000
+    ) {
+      console.log("⏳ กัน DM ซ้ำ");
       return;
     }
 
     cooldown.set(userId, Date.now());
 
+    // =========================
     // ดึง user
+    // =========================
+
     const user = await client.users.fetch(userId);
 
+    // =========================
     // แท็กห้อง ticket
+    // =========================
+
     const ticketTag = `<#${message.channel.id}>`;
 
     // =========================
@@ -109,33 +175,36 @@ client.on("messageCreate", async (message) => {
       .setColor("#8A2BE2")
 
       .setDescription(`
-🔹  •  แจ้งเตือนจากร้าน XBOOTS
+🔹 • แจ้งเตือนจากร้าน XBOOTS
 
-✅  •  แอดมินตอบ Ticket ของคุณแล้ว
+✅ • แอดมินตอบ Ticket ของคุณแล้ว
 
-🎟️  •  TK ของคุณ: ${ticketTag}
+🎟️ • TK ของคุณ: ${ticketTag}
       `)
 
-      // :white_check_mark: ใช้ RAW URL เท่านั้น
       .setImage(
         "https://raw.githubusercontent.com/film0118x-commits/xboots-bot/main/X1.png"
       )
 
+      // ✅ ตรงนี้เปลี่ยนจากเวลาเป็นชื่อร้าน
       .setFooter({
-        text: `วันนี้ เวลา ${new Date().toLocaleTimeString("th-TH", {
-          hour: "2-digit",
-          minute: "2-digit",
-        })}`,
+        text: "XBOOTS SUPPORT",
       });
 
+    // =========================
     // ส่ง DM
+    // =========================
+
     await user.send({
       embeds: [embed],
     });
 
-    console.log(`✅ ส่ง DM หา ${user.tag} แล้ว`);
+    console.log(
+      `✅ ส่ง DM หา ${user.tag} แล้ว`
+    );
+
   } catch (err) {
-    console.error(":x: ERROR:", err);
+    console.error("❌ ERROR:", err);
   }
 });
 
