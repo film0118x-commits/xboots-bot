@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 const express = require("express");
 const {
   Client,
@@ -6,10 +8,14 @@ const {
   EmbedBuilder,
 } = require("discord.js");
 
+// =========================
+// EXPRESS WEB SERVER
+// =========================
+
 const app = express();
+
 const PORT = process.env.PORT || 3000;
 
-// Web server สำหรับ Render
 app.get("/", (req, res) => {
   res.send("Bot is running!");
 });
@@ -18,7 +24,10 @@ app.listen(PORT, () => {
   console.log(`Web server running on port ${PORT}`);
 });
 
-// Discord Client
+// =========================
+// DISCORD CLIENT
+// =========================
+
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -32,23 +41,24 @@ client.once("ready", () => {
   console.log(`Logged in as ${client.user.tag}`);
 });
 
-// เมื่อมีข้อความใหม่
+// =========================
+// MESSAGE EVENT
+// =========================
+
 client.on("messageCreate", async (message) => {
-  if (message.author.bot) return;
-
-  // ตรวจว่าห้องชื่อ ticket ไหม
-  if (!message.channel.name.includes("ticket")) return;
-
   try {
-    const messages = await message.channel.messages.fetch({ limit: 20 });
+    if (message.author.bot) return;
 
+    // เช็คว่าช่องมีคำว่า ticket
+    if (!message.channel.name.includes("ticket")) return;
+
+    const messages = await message.channel.messages.fetch({
+      limit: 20,
+    });
+
+    // หา user ล่าสุดที่ไม่ใช่บอท
     const customerMessage = messages.find(
-      (m) =>
-        !m.author.bot &&
-        (m.member ||
-          m.memberPermissions?.has(
-            PermissionsBitField.Flags.Administrator
-          ))
+      (m) => !m.author.bot
     );
 
     if (!customerMessage) {
@@ -65,8 +75,7 @@ client.on("messageCreate", async (message) => {
 
     const diff = now - lastCustomerMessageTime;
 
-    // ถ้าลูกค้าพิมพ์ล่าสุดไม่เกิน 30 วิ
-    // จะไม่ส่ง DM
+    // ถ้าลูกค้าพิมพ์ล่าสุดภายใน 30 วิ ไม่ต้อง DM
     if (diff < 30000) {
       console.log("ลูกค้ากำลังอ่าน Ticket อยู่");
       return;
@@ -84,15 +93,22 @@ client.on("messageCreate", async (message) => {
 
 📩 กรุณากลับไปตรวจสอบ Ticket
       `)
-      .setFooter({ text: "XB00TS Support" });
+      .setFooter({
+        text: "XB00TS Support",
+      });
 
-    await user.send({ embeds: [embed] });
+    await user.send({
+      embeds: [embed],
+    });
 
     console.log(`ส่ง DM หา ${user.tag} แล้ว`);
   } catch (err) {
-    console.error(err);
+    console.error("ERROR:", err);
   }
 });
 
+// =========================
 // LOGIN
+// =========================
+
 client.login(process.env.TOKEN);
