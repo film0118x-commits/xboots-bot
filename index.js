@@ -6,6 +6,7 @@ const {
   Client,
   GatewayIntentBits,
   EmbedBuilder,
+  PermissionsBitField,
 } = require("discord.js");
 
 // =========================
@@ -60,7 +61,11 @@ client.on("messageCreate", async (message) => {
     if (!message.channel.name.includes("ticket")) return;
 
     // อนุญาตเฉพาะแอดมิน
-    if (!message.member.permissions.has("Administrator")) {
+    if (
+      !message.member.permissions.has(
+        PermissionsBitField.Flags.Administrator
+      )
+    ) {
       return;
     }
 
@@ -85,55 +90,69 @@ client.on("messageCreate", async (message) => {
 
     const userId = customerMessage.author.id;
 
-    // กันส่ง DM ซ้ำภายใน 1 นาที
+    // กันส่ง DM ซ้ำภายใน 5 นาที
     const lastSent = cooldown.get(userId);
 
-    if (lastSent && Date.now() - lastSent < 60000) {
-      console.log("⏳ กัน DM ซ้ำ");
+    if (lastSent && Date.now() - lastSent < 300000) {
+      console.log("⏳ กัน DM ซ้ำ 5 นาที");
       return;
     }
 
+    // บันทึกเวลา
     cooldown.set(userId, Date.now());
 
-    // ดึง user
-    const user = await client.users.fetch(userId);
-
-    // แท็กห้อง ticket
-    const ticketTag = `<#${message.channel.id}>`;
+    console.log("⏳ รอ 5 นาทีก่อนส่ง DM...");
 
     // =========================
-    // EMBED
+    // ดีเลย์ 5 นาที
     // =========================
 
-    const embed = new EmbedBuilder()
-      .setColor("#8A2BE2")
+    setTimeout(async () => {
+      try {
+        // ดึง user
+        const user = await client.users.fetch(userId);
 
-      .setDescription(`
+        // แท็กห้อง ticket
+        const ticketTag = `<#${message.channel.id}>`;
+
+        // =========================
+        // EMBED
+        // =========================
+
+        const embed = new EmbedBuilder()
+          .setColor("#8A2BE2")
+
+          .setDescription(`
 🔹 • แจ้งเตือนจากร้าน XBOOTS
 
 ✅ • แอดมินตอบ Ticket ของคุณแล้ว
 
 🎟️ • TK ของคุณ: ${ticketTag}
-      `)
+          `)
 
-      // ✅ ใช้ RAW URL เท่านั้น
-      .setImage(
-        "https://raw.githubusercontent.com/film0118x-commits/xboots-bot/main/X1.png"
-      )
+          // ใช้ RAW URL เท่านั้น
+          .setImage(
+            "https://raw.githubusercontent.com/film0118x-commits/xboots-bot/main/X1.png"
+          )
 
-      .setFooter({
-        text: `วันนี้ เวลา ${new Date().toLocaleTimeString("th-TH", {
-          hour: "2-digit",
-          minute: "2-digit",
-        })}`,
-      });
+          .setFooter({
+            text: `วันนี้ เวลา ${new Date().toLocaleTimeString("th-TH", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}`,
+          });
 
-    // ส่ง DM
-    await user.send({
-      embeds: [embed],
-    });
+        // ส่ง DM
+        await user.send({
+          embeds: [embed],
+        });
 
-    console.log(`✅ ส่ง DM หา ${user.tag} แล้ว`);
+        console.log(`✅ ส่ง DM หา ${user.tag} แล้ว`);
+      } catch (err) {
+        console.error("❌ ERROR ตอนส่ง DM:", err);
+      }
+    }, 300000); // 300000 ms = 5 นาที
+
   } catch (err) {
     console.error("❌ ERROR:", err);
   }
