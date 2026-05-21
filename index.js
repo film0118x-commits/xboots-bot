@@ -60,7 +60,7 @@ client.on("messageCreate", async (message) => {
     // ต้องเป็นห้อง ticket
     if (!message.channel.name.includes("ticket")) return;
 
-    // อนุญาตเฉพาะแอดมิน
+    // เฉพาะแอดมิน
     if (
       !message.member.permissions.has(
         PermissionsBitField.Flags.Administrator
@@ -68,6 +68,8 @@ client.on("messageCreate", async (message) => {
     ) {
       return;
     }
+
+    console.log("📩 ตรวจพบข้อความจากแอดมิน");
 
     // ดึงข้อความล่าสุด
     const messages = await message.channel.messages.fetch({
@@ -90,7 +92,10 @@ client.on("messageCreate", async (message) => {
 
     const userId = customerMessage.author.id;
 
-    // กันส่ง DM ซ้ำภายใน 5 นาที
+    // =========================
+    // กันส่ง DM ซ้ำ 5 นาที
+    // =========================
+
     const lastSent = cooldown.get(userId);
 
     if (lastSent && Date.now() - lastSent < 300000) {
@@ -101,7 +106,7 @@ client.on("messageCreate", async (message) => {
     // บันทึกเวลา
     cooldown.set(userId, Date.now());
 
-    console.log("⏳ รอ 5 นาทีก่อนส่ง DM...");
+    console.log("⏳ เริ่มดีเลย์ 5 นาที");
 
     // =========================
     // ดีเลย์ 5 นาที
@@ -130,7 +135,6 @@ client.on("messageCreate", async (message) => {
 🎟️ • TK ของคุณ: ${ticketTag}
           `)
 
-          // ใช้ RAW URL เท่านั้น
           .setImage(
             "https://raw.githubusercontent.com/film0118x-commits/xboots-bot/main/X1.png"
           )
@@ -142,16 +146,20 @@ client.on("messageCreate", async (message) => {
             })}`,
           });
 
+        // =========================
         // ส่ง DM
+        // =========================
+
         await user.send({
           embeds: [embed],
         });
 
         console.log(`✅ ส่ง DM หา ${user.tag} แล้ว`);
+
       } catch (err) {
         console.error("❌ ERROR ตอนส่ง DM:", err);
       }
-    }, 300000); // 300000 ms = 5 นาที
+    }, 300000); // 300000 = 5 นาที
 
   } catch (err) {
     console.error("❌ ERROR:", err);
