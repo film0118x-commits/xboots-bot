@@ -6,7 +6,6 @@ const {
   Client,
   GatewayIntentBits,
   EmbedBuilder,
-  PermissionsBitField,
 } = require("discord.js");
 
 // =========================
@@ -37,10 +36,7 @@ const client = new Client({
   ],
 });
 
-// =========================
-// COOLDOWN
-// =========================
-
+// กันส่ง DM ซ้ำ
 const cooldown = new Map();
 
 // =========================
@@ -63,29 +59,17 @@ client.on("messageCreate", async (message) => {
     // ต้องเป็นห้อง ticket
     if (!message.channel.name.includes("ticket")) return;
 
-    // เฉพาะแอดมิน
-    if (
-      !message.member.permissions.has(
-        PermissionsBitField.Flags.Administrator
-      )
-    ) {
+    // อนุญาตเฉพาะแอดมิน
+    if (!message.member.permissions.has("Administrator")) {
       return;
     }
 
-    console.log("📩 ตรวจพบข้อความจากแอดมิน");
-
-    // =========================
     // ดึงข้อความล่าสุด
-    // =========================
-
     const messages = await message.channel.messages.fetch({
       limit: 20,
     });
 
-    // =========================
     // หา user ลูกค้า
-    // =========================
-
     const customerMessage = messages
       .filter(
         (m) =>
@@ -95,94 +79,63 @@ client.on("messageCreate", async (message) => {
       .first();
 
     if (!customerMessage) {
-      console.log("❌ ไม่พบลูกค้า");
+      console.log(":x: ไม่พบลูกค้า");
       return;
     }
 
     const userId = customerMessage.author.id;
 
-    // =========================
-    // กันส่ง DM ซ้ำ 5 นาที
-    // =========================
-
+    // กันส่ง DM ซ้ำภายใน 1 นาที
     const lastSent = cooldown.get(userId);
 
-    if (lastSent && Date.now() - lastSent < 300000) {
-      console.log("⏳ กัน DM ซ้ำ 5 นาที");
+    if (lastSent && Date.now() - lastSent < 60000) {
+      console.log(":hourglass_flowing_sand: กัน DM ซ้ำ");
       return;
     }
 
-    // บันทึกเวลา
     cooldown.set(userId, Date.now());
 
-    console.log("⏳ รอ 5 นาที ก่อนส่ง DM");
+    // ดึง user
+    const user = await client.users.fetch(userId);
+
+    // แท็กห้อง ticket
+    const ticketTag = `<#${message.channel.id}>`;
 
     // =========================
-    // ดีเลย์ 5 นาที
+    // EMBED
     // =========================
 
-    setTimeout(async () => {
-      try {
-        // =========================
-        // ดึง user
-        // =========================
+    const embed = new EmbedBuilder()
+      .setColor("#8A2BE2")
 
-        const user = await client.users.fetch(userId);
+      .setDescription(`
+:small_blue_diamond: • แจ้งเตือนจากร้าน XBOOTS
 
-        // =========================
-        // แท็กห้อง ticket
-        // =========================
+:white_check_mark: • แอดมินตอบ Ticket ของคุณแล้ว
 
-        const ticketTag = `<#${message.channel.id}>`;
+:tickets: • TK ของคุณ: ${ticketTag}
+      `)
 
-        // =========================
-        // EMBED
-        // =========================
+      // :white_check_mark: ใช้ RAW URL เท่านั้น
+      .setImage(
+        "https://raw.githubusercontent.com/film0118x-commits/xboots-bot/main/X1.png"
+      )
 
-        const embed = new EmbedBuilder()
-          .setColor("#8A2BE2")
+      .setFooter({
+        text: `วันนี้ เวลา ${new Date().toLocaleTimeString("th-TH", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })}`,
+      });
 
-          .setDescription(`
-🔹 • แจ้งเตือนจากร้าน XBOOTS
+    // ส่ง DM
+    await user.send({
+      embeds: [embed],
+    });
 
-✅ • แอดมินตอบ Ticket ของคุณแล้ว
-
-🎟️ • TK ของคุณ: ${ticketTag}
-          `)
-
-          // =========================
-          // รูปภาพ
-          // =========================
-
-          .setImage(
-            "https://raw.githubusercontent.com/film0118x-commits/xboots-bot/main/X1.png"
-          )
-
-          // =========================
-          // FOOTER
-          // =========================
-
-          .setFooter({
-            text: "XBOOTS SUPPORT",
-          });
-
-        // =========================
-        // ส่ง DM
-        // =========================
-
-        await user.send({
-          embeds: [embed],
-        });
-
-        console.log(`✅ ส่ง DM หา ${user.tag} แล้ว`);
-
-      } catch (err) {
-        console.error("❌ ERROR ตอนส่ง DM:", err);
-      }
-    }, 300000); // 300000 = 5 นาที
-
+    console.log(`✅ ส่ง DM หา ${user.tag} แล้ว`);
   } catch (err) {
-    console.error("❌ ERROR:", err);
+    console.error(":x: ERROR:", err);
   }
 });
 
