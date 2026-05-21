@@ -5,7 +5,7 @@ const express = require("express");
 const {
   Client,
   GatewayIntentBits,
- EmbedBuilder,
+  EmbedBuilder,
 } = require("discord.js");
 
 // =========================
@@ -53,7 +53,7 @@ client.on("messageCreate", async (message) => {
     // กัน bot
     if (message.author.bot) return;
 
-    // เช็คว่าห้องมีคำว่า ticket
+    // เช็คห้อง ticket
     if (!message.channel.name.includes("ticket")) return;
 
     // ดึงข้อความล่าสุด
@@ -61,7 +61,7 @@ client.on("messageCreate", async (message) => {
       limit: 20,
     });
 
-    // หา "ลูกค้า"
+    // หา user ลูกค้า
     const customerMessage = messages
       .filter(
         (m) =>
@@ -85,7 +85,6 @@ client.on("messageCreate", async (message) => {
     const diff = now - lastCustomerMessageTime;
 
     // ถ้าลูกค้าเพิ่งพิมพ์ภายใน 30 วิ
-    // จะไม่ส่ง DM
     if (diff < 30000) {
       console.log("⏳ ลูกค้ากำลังอ่าน Ticket อยู่");
       return;
@@ -94,7 +93,7 @@ client.on("messageCreate", async (message) => {
     // ดึง user
     const user = await client.users.fetch(userId);
 
-    // แท็กห้อง Ticket แบบกดได้
+    // แท็กห้อง
     const ticketTag = `<#${message.channel.id}>`;
 
     // EMBED
@@ -109,7 +108,8 @@ client.on("messageCreate", async (message) => {
 🎟️ • TK ของคุณ: ${ticketTag}
       `)
 
-      .setImage(
+      // รูปโลโก้เล็กด้านขวา
+      .setThumbnail(
         "https://img1.pic.in.th/images/2025/05/21/ChatGPT-Image-May-21-2026-04_55_34-AMc33e0f6628a2bae5.png"
       )
 
