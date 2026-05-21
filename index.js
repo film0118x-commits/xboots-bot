@@ -36,8 +36,8 @@ const client = new Client({
   ],
 });
 
-// กันส่ง DM ซ้ำ
-const cooldown = new Map();
+// เก็บ timeout ของแต่ละ user
+const pendingNotifications = new Map();
 
 // =========================
 // READY
@@ -59,83 +59,132 @@ client.on("messageCreate", async (message) => {
     // ต้องเป็นห้อง ticket
     if (!message.channel.name.includes("ticket")) return;
 
-    // อนุญาตเฉพาะแอดมิน
-    if (!message.member.permissions.has("Administrator")) {
-      return;
-    }
-
+    // =========================
     // ดึงข้อความล่าสุด
+    // =========================
+
     const messages = await message.channel.messages.fetch({
       limit: 20,
     });
 
     // หา user ลูกค้า
     const customerMessage = messages
-      .filter(
-        (m) =>
-          !m.author.bot &&
-          m.author.id !== message.author.id
-      )
-      .first();
+      .filter((m) => !m.author.bot)
+      .last();
 
     if (!customerMessage) {
-      console.log(":x: ไม่พบลูกค้า");
+      console.log("❌ ไม่พบลูกค้า");
       return;
     }
 
     const userId = customerMessage.author.id;
 
-    // กันส่ง DM ซ้ำภายใน 1 นาที
-    const lastSent = cooldown.get(userId);
+    // =========================
+    // ถ้าลูกค้าพิมพ์ -> ยกเลิกแจ้งเตือน
+    // =========================
 
-    if (lastSent && Date.now() - lastSent < 60000) {
-      console.log(":hourglass_flowing_sand: กัน DM ซ้ำ");
+    if (
+      !message.member?.permissions?.has("Administrator")
+    ) {
+      if (pendingNotifications.has(userId)) {
+        clearTimeout(pendingNotifications.get(userId));
+        pendingNotifications.delete(userId);
+
+        console.log(`🛑 ยกเลิกแจ้งเตือนของ ${userId}`);
+      }
+
       return;
     }
 
-    cooldown.set(userId, Date.now());
-
-    // ดึง user
-    const user = await client.users.fetch(userId);
-
-    // แท็กห้อง ticket
-    const ticketTag = `<#${message.channel.id}>`;
-
     // =========================
-    // EMBED
+    // แอดมินตอบ
     // =========================
 
-    const embed = new EmbedBuilder()
-      .setColor("#8A2BE2")
+    console.log(`⏳ รอ 5 นาทีก่อนส่ง DM...`);
 
-      .setDescription(`
-:small_blue_diamond: • แจ้งเตือนจากร้าน XBOOTS
+    // ถ้ามี timeout เดิม -> ลบทิ้ง
+    if (pendingNotifications.has(userId)) {
+      clearTimeout(pendingNotifications.get(userId));
+    }
 
-:white_check_mark: • แอดมินตอบ Ticket ของคุณแล้ว
+    // ตั้งเวลาใหม่ 5 นาที
+    const timeout = setTimeout(async () => {
+      try {
 
-:tickets: • TK ของคุณ: ${ticketTag}
-      `)
+        // =========================
+        // เช็คว่าลูกค้าตอบกลับหรือยัง
+        // =========================
 
-      // :white_check_mark: ใช้ RAW URL เท่านั้น
-      .setImage(
-        "https://raw.githubusercontent.com/film0118x-commits/xboots-bot/main/X1.png"
-      )
+        const latestMessages = await message.channel.messages.fetch({
+          limit: 10,
+        });
 
-      .setFooter({
-        text: `วันนี้ เวลา ${new Date().toLocaleTimeString("th-TH", {
-          hour: "2-digit",
-          minute: "2-digit",
-        })}`,
-      });
+        const latestCustomerReply = latestMessages.find(
+          (m) =>
+            !m.author.bot &&
+            m.author.id === userId
+        );
 
-    // ส่ง DM
-    await user.send({
-      embeds: [embed],
-    });
+        // ถ้าลูกค้าพิมพ์ล่าสุด -> ไม่ส่ง DM
+        if (
+          latestCustomerReply &&
+          latestCustomerReply.createdTimestamp >
+            message.createdTimestamp
+        ) {
+          console.log("🛑 ลูกค้าตอบกลับแล้ว ไม่ส่ง DM");
+          pendingNotifications.delete(userId);
+          return;
+        }
 
-    console.log(`✅ ส่ง DM หา ${user.tag} แล้ว`);
+        // ดึง user
+        const user = await client.users.fetch(userId);
+
+        // แท็กห้อง ticket
+        const ticketTag = `<#${message.channel.id}>`;
+
+        // =========================
+        // EMBED
+        // =========================
+
+        const embed = new EmbedBuilder()
+          .setColor("#8A2BE2")
+
+          .setAuthor({
+            name: "XBOOTS SUPPORT",
+          })
+
+          .setDescription(`
+🔹 • แจ้งเตือนจากร้าน XBOOTS
+
+✅ • แอดมินตอบ Ticket ของคุณแล้ว
+
+🎟️ • TK ของคุณ: ${ticketTag}
+          `)
+
+          .setImage(
+            "https://raw.githubusercontent.com/film0118x-commits/xboots-bot/main/X1.png"
+          );
+
+        // ส่ง DM
+        await user.send({
+          embeds: [embed],
+        });
+
+        console.log(`✅ ส่ง DM หา ${user.tag} แล้ว`);
+
+        // ลบ timeout หลังส่งเสร็จ
+        pendingNotifications.delete(userId);
+
+      } catch (err) {
+        console.error("❌ ERROR ส่ง DM:", err);
+      }
+    }, 5 * 60 * 1000); // 5 นาที
+
+    // เก็บ timeout
+    pendingNotifications.set(userId, timeout);
+
   } catch (err) {
-    console.error(":x: ERROR:", err);
+    console.error("❌ ERROR:", err);
   }
 });
 
