@@ -36,6 +36,9 @@ const client = new Client({
   ],
 });
 
+// กันส่ง DM ซ้ำ
+const cooldown = new Map();
+
 // =========================
 // READY
 // =========================
@@ -53,15 +56,20 @@ client.on("messageCreate", async (message) => {
     // กัน bot
     if (message.author.bot) return;
 
-    // เช็คห้อง ticket
+    // ต้องเป็นห้อง ticket
     if (!message.channel.name.includes("ticket")) return;
+
+    // กันลูกค้าพิมพ์เองแล้วบอท DM
+    if (!message.member.permissions.has("Administrator")) {
+      return;
+    }
 
     // ดึงข้อความล่าสุด
     const messages = await message.channel.messages.fetch({
       limit: 20,
     });
 
-    // หา user ลูกค้า
+    // หาลูกค้า
     const customerMessage = messages
       .filter(
         (m) =>
@@ -77,26 +85,26 @@ client.on("messageCreate", async (message) => {
 
     const userId = customerMessage.author.id;
 
-    const now = Date.now();
+    // กันส่ง DM รัว
+    const lastSent = cooldown.get(userId);
 
-    const lastCustomerMessageTime =
-      customerMessage.createdTimestamp;
-
-    const diff = now - lastCustomerMessageTime;
-
-    // ถ้าลูกค้าเพิ่งพิมพ์ภายใน 30 วิ
-    if (diff < 30000) {
-      console.log("⏳ ลูกค้ากำลังอ่าน Ticket อยู่");
+    if (lastSent && Date.now() - lastSent < 60000) {
+      console.log("⏳ กัน DM ซ้ำ");
       return;
     }
+
+    cooldown.set(userId, Date.now());
 
     // ดึง user
     const user = await client.users.fetch(userId);
 
-    // แท็กห้อง
+    // แท็กห้องแบบกดได้
     const ticketTag = `<#${message.channel.id}>`;
 
+    // =========================
     // EMBED
+    // =========================
+
     const embed = new EmbedBuilder()
       .setColor("#00C2FF")
 
@@ -108,9 +116,8 @@ client.on("messageCreate", async (message) => {
 🎟️ • TK ของคุณ: ${ticketTag}
       `)
 
-      // รูปโลโก้เล็กด้านขวา
-      .setThumbnail(
-        "https://img1.pic.in.th/images/2025/05/21/ChatGPT-Image-May-21-2026-04_55_34-AMc33e0f6628a2bae5.png"
+      .setImage(
+        "https://i.postimg.cc/pV0Pj6Z4/Chat-GPT-Image-May-21-2026-04-55-34-AM.png"
       )
 
       .setFooter({
